@@ -284,7 +284,7 @@ class EconDash(_Base):
         return self._one(TopCountries, self._get(url, params))
 
     def cite(self, indicator: str, country: str) -> Citation:
-        """Latest value with ready citation strings (text, short, markdown). Free endpoint."""
+        """Latest value with ready citation strings (text, short, markdown)."""
         return self._one(Citation, self._get(f"{self.base_url}/cite/{country}/{indicator}"))
 
 

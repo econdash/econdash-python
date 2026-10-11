@@ -23,9 +23,8 @@ s = ed.get_series("gdp-nominal", "USA", start=2000)
 s.data[-1]  # Point(date=2025-01-01, value=3.07e13, ...)
 ed.list_countries()  # -> list[Country]
 ed.top_countries("gdp-nominal", year=2024, limit=10)
-ed.cite(
-    "gdp-nominal", "USA"
-).citation.text  # 'United States GDP nominal was $30.77 tn in 2025 (World Bank, ...)'
+ed.cite("gdp-nominal", "USA").citation.text
+# 'United States GDP nominal was $30.77 tn in 2025 (World Bank, 2025-01-01)'
 ```
 
 Indicators can be addressed by slug (`gdp-nominal`, as in
@@ -45,12 +44,21 @@ One URL for everything. Without a key the **free trial** answers right away:
 Anything outside the trial (another country or indicator, or more requests than the free
 quota) answers **HTTP 402** with payment options. You can either:
 
-- use an API key: create one at [econdash.org/dashboard/api-keys](https://econdash.org/dashboard/api-keys)
+- use an API key (subscription): create one at [econdash.org/dashboard/api-keys](https://econdash.org/dashboard/api-keys)
   ([plans](https://econdash.org/api-access)), then `EconDash(api_key="ed_...")` or set `ECONDASH_API_KEY`;
 - or let the client pay for that one call (below).
 
 Without a key or wallet the client raises `EconDashPaymentRequired` for such calls, and
 nothing is paid.
+
+### With an API key
+
+A key from an active subscription opens every indicator and country with full history, no
+per-IP trial limits, on every method including `cite()`. It allows 10,000 requests per
+calendar month; per-endpoint rate limits (60–120 requests per minute) still apply. A wrong
+or deactivated key gives `EconDashAuthError` (401), an inactive or expired subscription
+`EconDashAuthError` (403), and the monthly quota `EconDashRateLimitError` (429). With a key
+the client never pays per call.
 
 ## Async
 
@@ -65,18 +73,19 @@ async with AsyncEconDash() as ed:
 
 | Exception | When |
 |---|---|
-| `EconDashAuthError` | 401/403: bad key, inactive subscription, data outside the trial |
+| `EconDashAuthError` | 401/403: wrong or deactivated key, inactive or expired subscription |
 | `EconDashNotFound` | 404: unknown indicator or country |
-| `EconDashRateLimitError` | 429, `retry_after` in seconds |
-| `EconDashPaymentRequired` | 402, `challenge` holds the x402 payment requirements |
+| `EconDashRateLimitError` | 429: monthly key quota or per-minute rate limit, `retry_after` in seconds |
+| `EconDashPaymentRequired` | 402: outside the free trial or over its quota. `challenge` holds the x402 requirements, `www_authenticate` the MPP ones. Nothing was paid |
 | `EconDashError` | base class, anything else |
 
 ## Pay per call (for AI agents)
 
 Agents without an account can pay each call in USDC, about $0.02 per call at the time of
 writing. Payments are **off by default**: the client pays only when you pass a wallet
-**and** `max_usd_per_call`. Anything more expensive is refused before signing. Free trial
-data is never paid for, even with a wallet configured.
+**and** `max_usd_per_call`. Anything more expensive is refused before signing. Calls the free
+trial covers are not paid even with a wallet configured; once the free quota is used up, they
+are paid like any other call.
 
 | Rail | Install | Wallet argument |
 |---|---|---|
@@ -106,7 +115,7 @@ up to ~40 seconds. Keep agent wallets funded with small amounts only.
 ## Examples
 
 Notebooks in [`examples/`](examples/): search → series → pandas chart, comparing countries,
-a LangChain agent, an agent paying with x402.
+a LangChain agent, an agent paying per call (x402 / MPP).
 
 ## Data and licences
 
@@ -130,6 +139,7 @@ uv run pytest -m live    # contract tests against the real API
 uv run ruff check . && uv run mypy
 ```
 
-Releases are published to PyPI from GitHub Actions on a GitHub Release (trusted publishing).
+Releases: bump `__version__`, `CHANGELOG.md` and `CITATION.cff`, then push a tag `vX.Y.Z`;
+GitHub Actions publishes to PyPI with trusted publishing (no tokens).
 
 MIT licence. The data itself is licensed by its original sources.

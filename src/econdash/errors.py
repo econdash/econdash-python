@@ -13,7 +13,7 @@ class EconDashError(Exception):
 
 
 class EconDashAuthError(EconDashError):
-    """401/403: bad API key, inactive subscription, or data outside the free trial."""
+    """401/403: wrong or deactivated API key, inactive or expired subscription."""
 
 
 class EconDashNotFound(EconDashError):
@@ -21,7 +21,7 @@ class EconDashNotFound(EconDashError):
 
 
 class EconDashRateLimitError(EconDashError):
-    """429: trial or key quota exhausted. `retry_after` is in seconds."""
+    """429: monthly key quota or per-minute rate limit. `retry_after` is in seconds."""
 
     def __init__(self, message: str, *, retry_after: int | None = None, **kw: Any) -> None:
         super().__init__(message, **kw)
@@ -29,7 +29,8 @@ class EconDashRateLimitError(EconDashError):
 
 
 class EconDashPaymentRequired(EconDashError):
-    """402: the call needs payment. `challenge` is the decoded x402 PAYMENT-REQUIRED
+    """402: outside the free trial or over its quota, the call needs payment or a key.
+    `challenge` is the decoded x402 PAYMENT-REQUIRED
     object, `www_authenticate` the raw MPP challenges. Nothing was paid."""
 
     def __init__(

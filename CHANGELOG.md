@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-10-11
+
+### Fixed
+- Docs: what an API key gives (full access, 10,000 requests/month, `cite()` included),
+  corrected error descriptions (`EconDashAuthError` is key/subscription only; outside the
+  trial is `EconDashPaymentRequired`), trial calls are free only within the free quota,
+  release process. The API now meters keys on `/cite` too.
+
 ## [0.2.0] - 2026-10-11
 
 ### Added
@@ -14,7 +22,7 @@ All notable changes to this project are documented here. The project follows
 ### Changed
 - One URL for everything: requests go to `/api/v1`, where free trial data is free and
   anything else answers 402 with payment options. Paid calls no longer go to `/api/v1/m2m`,
-  so trial data is never paid for.
+  so calls the free trial covers are not paid.
 - Outside the trial without a key or wallet the client now raises `EconDashPaymentRequired`
   (the API answers 402 instead of 403).
 - `x402_signer` alone enables x402; `pay_with_x402=True` still works but is optional.
