@@ -66,7 +66,13 @@ def _search(indicators: list[Indicator], query: str, limit: int) -> list[Indicat
         if all(w in hay for w in words):
             hits.append(ind)
     q = query.lower()
-    hits.sort(key=lambda i: (q not in (i.name_en or "").lower(), -i.data_points))
+    slug = "-".join(words)
+
+    def rank(i: Indicator) -> tuple[bool, bool, bool, int]:
+        name = (i.name_en or "").lower()
+        return (i.slug != slug, not name.startswith(q), q not in name, -i.data_points)
+
+    hits.sort(key=rank)
     return hits[:limit]
 
 

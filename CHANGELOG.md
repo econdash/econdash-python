@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-11
+
+### Fixed
+- `search_indicators` ranks exact slug matches and names starting with the query first
+  (`"gdp"` now returns GDP nominal before CO2 per unit GDP).
+
 ## [0.1.0] - 2026-10-11
 
 ### Added
