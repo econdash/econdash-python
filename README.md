@@ -32,9 +32,9 @@ Indicators can be addressed by slug (`gdp-nominal`, as in
 `econdash.org/chart/gdp-nominal/USA`) or by code (`world_bank__gdp_nominal`).
 `start`/`end` accept `2000`, `"2000-06"`, `"2000-06-30"` or a `date`.
 
-## Free trial vs API key
+## Free trial, API key, or pay per call
 
-Without a key the client works on the **free trial**:
+One URL for everything. Without a key the **free trial** answers right away:
 
 | Limit | Trial |
 |---|---|
@@ -42,15 +42,15 @@ Without a key the client works on the **free trial**:
 | Countries | 10: USA, CHN, DEU, JPN, GBR, FRA, IND, BRA, RUS, KOR |
 | Indicators | 50 core series (GDP, CPI, money supply, debt, trade, …) |
 
-Outside the trial the API answers `403` and the client raises `EconDashAuthError`
-("Country ZWE not available in trial"). That is the trial limit, not a bug.
+Anything outside the trial (another country or indicator, or more requests than the free
+quota) answers **HTTP 402** with payment options. You can either:
 
-For full access create a key at [econdash.org/dashboard/api-keys](https://econdash.org/dashboard/api-keys)
-([plans](https://econdash.org/api-access)) and pass it:
+- use an API key: create one at [econdash.org/dashboard/api-keys](https://econdash.org/dashboard/api-keys)
+  ([plans](https://econdash.org/api-access)), then `EconDash(api_key="ed_...")` or set `ECONDASH_API_KEY`;
+- or let the client pay for that one call (below).
 
-```python
-ed = EconDash(api_key="ed_...")  # or set ECONDASH_API_KEY
-```
+Without a key or wallet the client raises `EconDashPaymentRequired` for such calls, and
+nothing is paid.
 
 ## Async
 
@@ -71,32 +71,37 @@ async with AsyncEconDash() as ed:
 | `EconDashPaymentRequired` | 402, `challenge` holds the x402 payment requirements |
 | `EconDashError` | base class, anything else |
 
-## Pay per call with x402 (for AI agents)
+## Pay per call (for AI agents)
 
-Agents without an account can pay each call in USDC on Base via
-[x402](https://www.x402.org) ($0.02 per call at the time of writing). It is **off by
-default**: the client never spends money unless you turn it on and set a cap.
+Agents without an account can pay each call in USDC, about $0.02 per call at the time of
+writing. Payments are **off by default**: the client pays only when you pass a wallet
+**and** `max_usd_per_call`. Anything more expensive is refused before signing. Free trial
+data is never paid for, even with a wallet configured.
 
-```bash
-pip install "econdash[x402]"
-```
+| Rail | Install | Wallet argument |
+|---|---|---|
+| [x402](https://www.x402.org), USDC on Base | `pip install "econdash[x402]"` | `x402_signer=eth_account.Account.from_key(...)` |
+| [MPP](https://mpp.dev), USDC on Tempo | `pip install "econdash[tempo]"` (Python 3.11+) | `tempo_account=mpp.methods.tempo.TempoAccount.from_key(...)` |
+| MPP, USDC on Solana | `pip install "econdash[solana]"` | `solana_keypair=solders.keypair.Keypair.from_base58_string(...)` |
 
 ```python
 import os
 
-from eth_account import Account
 from econdash import EconDash
+from solders.keypair import Keypair
 
 ed = EconDash(
-    pay_with_x402=True,
-    x402_signer=Account.from_key(os.environ["AGENT_PRIVATE_KEY"]),
-    max_usd_per_call=0.05,  # x402 refuses to sign anything more expensive
+    solana_keypair=Keypair.from_base58_string(os.environ["AGENT_SOLANA_KEY"]),
+    max_usd_per_call=0.05,
 )
-ed.get_series("gdp-nominal", "ZWE")
+ed.get_series("gdp-nominal", "ZWE")  # outside the trial: one paid call
+ed.get_series("gdp-nominal", "USA")  # inside the trial: free
 ```
 
-If the price is above `max_usd_per_call`, nothing is signed and `EconDashPaymentRequired`
-is raised. Keep agent wallets funded with small amounts only.
+You can configure several wallets; on a 402 the client tries x402 (Base), then MPP Tempo,
+then MPP Solana, and pays with the first one the API offers within your cap. On Solana the
+API broadcasts the signed transfer and answers after confirmation, so a paid call can take
+up to ~40 seconds. Keep agent wallets funded with small amounts only.
 
 ## Examples
 

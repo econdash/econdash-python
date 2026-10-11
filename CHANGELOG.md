@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-11
+
+### Added
+- Pay per call with **MPP on Tempo** (`tempo_account=`, extra `econdash[tempo]`, Python 3.11+,
+  official `pympp` client) and **MPP on Solana** (`solana_keypair=`, extra `econdash[solana]`).
+- Several wallets at once: on a 402 the client tries x402, Tempo, Solana in that order.
+- `EconDash.payment_methods` lists the configured rails.
+
+### Changed
+- One URL for everything: requests go to `/api/v1`, where free trial data is free and
+  anything else answers 402 with payment options. Paid calls no longer go to `/api/v1/m2m`,
+  so trial data is never paid for.
+- Outside the trial without a key or wallet the client now raises `EconDashPaymentRequired`
+  (the API answers 402 instead of 403).
+- `x402_signer` alone enables x402; `pay_with_x402=True` still works but is optional.
+  `max_usd_per_call` is required whenever a wallet is passed.
+
 ## [0.1.2] - 2026-10-11
 
 ### Changed

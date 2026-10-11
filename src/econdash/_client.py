@@ -10,6 +10,7 @@ import httpx
 from pydantic import BaseModel, TypeAdapter
 
 from . import __version__
+from ._payments import SOLANA_RPC_URL, PaymentRefused, SolanaPayer, TempoPayer, X402Payer
 from .errors import (
     EconDashAuthError,
     EconDashError,
@@ -124,20 +125,6 @@ def _check(resp: httpx.Response) -> Any:
     raise EconDashError(msg, status_code=code, body=body)
 
 
-def _x402_client(signer: Any, max_usd_per_call: float, sync: bool) -> Any:
-    try:
-        from x402 import x402Client, x402ClientSync
-        from x402.http import x402HTTPClient, x402HTTPClientSync
-        from x402.mechanisms.evm.exact import register_exact_evm_client
-    except ImportError as e:  # pragma: no cover
-        raise ImportError("x402 payments need the extra: pip install 'econdash[x402]'") from e
-    client: Any = x402ClientSync() if sync else x402Client()
-    register_exact_evm_client(client, signer)
-    # x402 refuses to sign anything above this cap; nothing is paid then.
-    client.set_spend_controls({"max_amount_per_payment": f"${max_usd_per_call}"})
-    return x402HTTPClientSync(client) if sync else x402HTTPClient(client)
-
-
 class _Base:
     def __init__(
         self,
@@ -147,6 +134,9 @@ class _Base:
         timeout: float = 30.0,
         pay_with_x402: bool = False,
         x402_signer: Any = None,
+        tempo_account: Any = None,
+        solana_keypair: Any = None,
+        solana_rpc_url: str = SOLANA_RPC_URL,
         max_usd_per_call: float | None = None,
     ) -> None:
         self.api_key = api_key or os.environ.get("ECONDASH_API_KEY") or None
@@ -155,20 +145,34 @@ class _Base:
         self.headers = {"User-Agent": f"econdash-python/{__version__}"}
         if self.api_key:
             self.headers["Authorization"] = f"Bearer {self.api_key}"
-        if pay_with_x402 and (x402_signer is None or not max_usd_per_call):
-            raise ValueError("pay_with_x402=True needs x402_signer and max_usd_per_call")
-        self.pay_with_x402 = pay_with_x402
-        self._x402_signer = x402_signer
+        if pay_with_x402 and x402_signer is None:
+            raise ValueError("pay_with_x402=True needs x402_signer")
+        wallets = {"x402": x402_signer, "tempo": tempo_account, "solana": solana_keypair}
+        self.payment_methods = [m for m, w in wallets.items() if w is not None]
+        if self.payment_methods and not (max_usd_per_call and max_usd_per_call > 0):
+            raise ValueError("pay-per-call needs max_usd_per_call (the most one call may cost)")
+        self._wallets = wallets
+        self._solana_rpc_url = solana_rpc_url
         self._max_usd = max_usd_per_call or 0.0
-        # Paid (x402) access lives under /m2m; plain /api/v1 answers trial limits, not 402.
-        self._data = self.base_url + ("/m2m" if pay_with_x402 else "")
         self._indicators: list[Indicator] | None = None
         self._codes: dict[str, str] = {}
 
-    def _x402_for(self, sync: bool) -> Any:
-        if not self.pay_with_x402:
-            return None
-        return _x402_client(self._x402_signer, self._max_usd, sync=sync)
+    def _make_payers(self, sync: bool) -> list[Any]:
+        """Tried in this order on a 402: x402 (Base), MPP Tempo, MPP Solana."""
+        w, cap = self._wallets, self._max_usd
+        payers: list[Any] = []
+        if w["x402"] is not None:
+            payers.append(X402Payer(w["x402"], cap, sync=sync))
+        if w["tempo"] is not None:
+            payers.append(TempoPayer(w["tempo"], cap))
+        if w["solana"] is not None:
+            payers.append(SolanaPayer(w["solana"], cap, self._solana_rpc_url))
+        return payers
+
+    @staticmethod
+    def _not_paid(resp: httpx.Response, refused: list[str]) -> EconDashPaymentRequired:
+        why = "; ".join(refused) or "the API offered no payment method configured here"
+        return _payment_required(resp, f"payment not made: {why}")
 
     def _remember(self, ind: Indicator) -> Indicator:
         if ind.slug:
@@ -204,7 +208,7 @@ class EconDash(_Base):
     def __init__(self, api_key: str | None = None, **kw: Any) -> None:
         super().__init__(api_key, **kw)
         self._http = httpx.Client(headers=self.headers, timeout=self.timeout)
-        self._x402 = self._x402_for(sync=True)
+        self._payers = self._make_payers(sync=True)
 
     def __enter__(self) -> EconDash:
         return self
@@ -217,14 +221,18 @@ class EconDash(_Base):
 
     def _get(self, url: str, params: dict[str, Any] | None = None) -> Any:
         resp = self._http.get(url, params=params)
-        if resp.status_code == 402 and self._x402 is not None:
-            try:
-                pay, _ = self._x402.handle_402_response(
-                    dict(resp.headers), resp.content, str(resp.request.url)
-                )
-            except Exception as e:
-                raise _payment_required(resp, f"x402 payment not made: {e}") from e
-            resp = self._http.get(url, params=params, headers=pay)
+        if resp.status_code == 402 and self._payers:
+            refused = []
+            for payer in self._payers:
+                try:
+                    pay = payer.headers(resp, self._http)
+                except PaymentRefused as e:
+                    refused.append(str(e))
+                    continue
+                if pay:
+                    # One paid retry; a second 402 is raised, never looped.
+                    return _check(self._http.get(url, params=params, headers=pay))
+            raise self._not_paid(resp, refused)
         return _check(resp)
 
     def _code(self, indicator: str) -> str:
@@ -237,7 +245,7 @@ class EconDash(_Base):
     def list_indicators(self) -> list[Indicator]:
         """All active indicators (cached per client)."""
         if self._indicators is None:
-            data = self._get(f"{self._data}/indicators", {"limit": 1200})
+            data = self._get(f"{self.base_url}/indicators", {"limit": 1200})
             self._indicators = [self._remember(i) for i in self._many(Indicator, data)]
         return self._indicators
 
@@ -248,7 +256,7 @@ class EconDash(_Base):
     def get_indicator(self, indicator: str) -> Indicator:
         """Metadata by slug ("gdp-nominal") or code ("world_bank__gdp_nominal")."""
         path = indicator if _is_code(indicator) else f"by-slug/{indicator}"
-        return self._remember(self._one(Indicator, self._get(f"{self._data}/indicators/{path}")))
+        return self._remember(self._one(Indicator, self._get(f"{self.base_url}/indicators/{path}")))
 
     def get_series(
         self,
@@ -259,11 +267,11 @@ class EconDash(_Base):
         end: DateLike | None = None,
     ) -> Series:
         """Time series for one country. `start`/`end`: 2000, "2000-06" or "2000-06-30"."""
-        url = f"{self._data}/timeseries/{self._code(indicator)}"
+        url = f"{self.base_url}/timeseries/{self._code(indicator)}"
         return self._one(Series, self._get(url, self._series_params(country, start, end)))
 
     def list_countries(self) -> list[Country]:
-        return self._many(Country, self._get(f"{self._data}/countries"))
+        return self._many(Country, self._get(f"{self.base_url}/countries"))
 
     def top_countries(
         self, indicator: str, *, year: int | None = None, limit: int = 10
@@ -272,7 +280,7 @@ class EconDash(_Base):
         params: dict[str, Any] = {"limit": limit}
         if year is not None:
             params["year"] = year
-        url = f"{self._data}/timeseries/{self._code(indicator)}/top-countries"
+        url = f"{self.base_url}/timeseries/{self._code(indicator)}/top-countries"
         return self._one(TopCountries, self._get(url, params))
 
     def cite(self, indicator: str, country: str) -> Citation:
@@ -286,7 +294,7 @@ class AsyncEconDash(_Base):
     def __init__(self, api_key: str | None = None, **kw: Any) -> None:
         super().__init__(api_key, **kw)
         self._http = httpx.AsyncClient(headers=self.headers, timeout=self.timeout)
-        self._x402 = self._x402_for(sync=False)
+        self._payers = self._make_payers(sync=False)
 
     async def __aenter__(self) -> AsyncEconDash:
         return self
@@ -299,14 +307,17 @@ class AsyncEconDash(_Base):
 
     async def _get(self, url: str, params: dict[str, Any] | None = None) -> Any:
         resp = await self._http.get(url, params=params)
-        if resp.status_code == 402 and self._x402 is not None:
-            try:
-                pay, _ = await self._x402.handle_402_response(
-                    dict(resp.headers), resp.content, str(resp.request.url)
-                )
-            except Exception as e:
-                raise _payment_required(resp, f"x402 payment not made: {e}") from e
-            resp = await self._http.get(url, params=params, headers=pay)
+        if resp.status_code == 402 and self._payers:
+            refused = []
+            for payer in self._payers:
+                try:
+                    pay = await payer.aheaders(resp, self._http)
+                except PaymentRefused as e:
+                    refused.append(str(e))
+                    continue
+                if pay:
+                    return _check(await self._http.get(url, params=params, headers=pay))
+            raise self._not_paid(resp, refused)
         return _check(resp)
 
     async def _code(self, indicator: str) -> str:
@@ -318,7 +329,7 @@ class AsyncEconDash(_Base):
 
     async def list_indicators(self) -> list[Indicator]:
         if self._indicators is None:
-            data = await self._get(f"{self._data}/indicators", {"limit": 1200})
+            data = await self._get(f"{self.base_url}/indicators", {"limit": 1200})
             self._indicators = [self._remember(i) for i in self._many(Indicator, data)]
         return self._indicators
 
@@ -327,7 +338,7 @@ class AsyncEconDash(_Base):
 
     async def get_indicator(self, indicator: str) -> Indicator:
         path = indicator if _is_code(indicator) else f"by-slug/{indicator}"
-        data = await self._get(f"{self._data}/indicators/{path}")
+        data = await self._get(f"{self.base_url}/indicators/{path}")
         return self._remember(self._one(Indicator, data))
 
     async def get_series(
@@ -338,11 +349,11 @@ class AsyncEconDash(_Base):
         start: DateLike | None = None,
         end: DateLike | None = None,
     ) -> Series:
-        url = f"{self._data}/timeseries/{await self._code(indicator)}"
+        url = f"{self.base_url}/timeseries/{await self._code(indicator)}"
         return self._one(Series, await self._get(url, self._series_params(country, start, end)))
 
     async def list_countries(self) -> list[Country]:
-        return self._many(Country, await self._get(f"{self._data}/countries"))
+        return self._many(Country, await self._get(f"{self.base_url}/countries"))
 
     async def top_countries(
         self, indicator: str, *, year: int | None = None, limit: int = 10
@@ -350,7 +361,7 @@ class AsyncEconDash(_Base):
         params: dict[str, Any] = {"limit": limit}
         if year is not None:
             params["year"] = year
-        url = f"{self._data}/timeseries/{await self._code(indicator)}/top-countries"
+        url = f"{self.base_url}/timeseries/{await self._code(indicator)}/top-countries"
         return self._one(TopCountries, await self._get(url, params))
 
     async def cite(self, indicator: str, country: str) -> Citation:

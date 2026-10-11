@@ -2,7 +2,8 @@
 
 Every field the API returns must be modelled, and every required model field must be
 returned, so schema drift on either side fails here instead of silently dropping data.
-The paid x402 test runs only with ECONDASH_TEST_X402_KEY (a funded test wallet on Base).
+Paid tests run only with funded test wallets: ECONDASH_TEST_X402_KEY (Base),
+ECONDASH_TEST_TEMPO_KEY (Tempo), ECONDASH_TEST_SOLANA_KEY (Solana, base58).
 """
 
 import os
@@ -16,6 +17,7 @@ from econdash import (
     Citation,
     Country,
     EconDash,
+    EconDashPaymentRequired,
     Indicator,
     Point,
     Series,
@@ -81,14 +83,37 @@ def test_countries_top_cite(ed: EconDash) -> None:
     assert ed.cite("gdp-nominal", "USA").citation.text
 
 
-@pytest.mark.skipif(not os.environ.get("ECONDASH_TEST_X402_KEY"), reason="no test wallet key")
+def test_outside_trial_is_402_with_all_rails(ed: EconDash) -> None:
+    with pytest.raises(EconDashPaymentRequired) as ei:
+        ed.get_series("world_bank__gdp_nominal", "ZWE")
+    assert ei.value.challenge["accepts"][0]["network"] == "eip155:8453"
+    methods = " ".join(ei.value.www_authenticate)
+    assert 'method="tempo"' in methods and 'method="solana"' in methods
+
+
+def _paid_zwe(**wallet: Any) -> None:
+    """Spends one real call (about $0.02 USDC) and gets data outside the free trial."""
+    with EconDash(base_url=BASE, max_usd_per_call=0.05, **wallet) as paid:
+        s = paid.get_series("world_bank__gdp_nominal", "ZWE", start=2020)
+    assert s.data and s.data[0].country == "ZWE"
+
+
+@pytest.mark.skipif(not os.environ.get("ECONDASH_TEST_X402_KEY"), reason="no Base test wallet")
 def test_x402_real_payment() -> None:
-    """Spends one real call ($0.02 USDC on Base) from the test wallet."""
     from eth_account import Account
 
-    signer = Account.from_key(os.environ["ECONDASH_TEST_X402_KEY"])
-    with EconDash(
-        base_url=BASE, pay_with_x402=True, x402_signer=signer, max_usd_per_call=0.05
-    ) as paid:
-        s = paid.get_series("world_bank__gdp_nominal", "ZWE", start=2020)
-    assert s.data and s.data[0].country == "ZWE"  # ZWE is outside the free trial
+    _paid_zwe(x402_signer=Account.from_key(os.environ["ECONDASH_TEST_X402_KEY"]))
+
+
+@pytest.mark.skipif(not os.environ.get("ECONDASH_TEST_TEMPO_KEY"), reason="no Tempo test wallet")
+def test_tempo_real_payment() -> None:
+    from mpp.methods.tempo import TempoAccount
+
+    _paid_zwe(tempo_account=TempoAccount.from_key(os.environ["ECONDASH_TEST_TEMPO_KEY"]))
+
+
+@pytest.mark.skipif(not os.environ.get("ECONDASH_TEST_SOLANA_KEY"), reason="no Solana test wallet")
+def test_solana_real_payment() -> None:
+    from solders.keypair import Keypair
+
+    _paid_zwe(solana_keypair=Keypair.from_base58_string(os.environ["ECONDASH_TEST_SOLANA_KEY"]))
