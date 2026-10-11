@@ -1,0 +1,55 @@
+name: Publish langchain-econdash to PyPI
+
+# PyPI trusted publishing, no API token.
+# Pending publisher: project langchain-econdash, owner econdash,
+# repo econdash-python, workflow publish-langchain.yml, environment pypi.
+# Tag langchain-v0.1.0 publishes 0.1.0. A plain v* tag still publishes only econdash.
+on:
+  push:
+    tags: ["langchain-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/langchain-econdash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.12"
+      - name: Tag matches package version
+        run: |
+          version="${GITHUB_REF_NAME#langchain-v}"
+          found="$(uv run --no-project python -c 'import pathlib, re; text = pathlib.Path("pyproject.toml").read_text(); print(re.search(r"^version = \"(.+)\"", text, re.M).group(1))')"
+          test "$version" = "$found"
+      - name: Test
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e . pytest pytest-asyncio
+          .venv/bin/pytest
+      - name: Build
+        run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: packages/langchain-econdash/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/langchain-econdash/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

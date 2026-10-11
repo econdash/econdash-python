@@ -6,6 +6,9 @@ LangChain tools for [EconDash](https://econdash.org). They call the `econdash` c
 pip install langchain-econdash
 ```
 
+Releases are tags `langchain-vX.Y.Z` on `econdash-python` (the `X.Y.Z` matches this
+package's version). A `v*` tag publishes the `econdash` client, not this package.
+
 ```python
 from langchain_econdash import EconDashToolkit
 
