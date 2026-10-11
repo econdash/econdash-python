@@ -63,17 +63,20 @@ def _search(indicators: list[Indicator], query: str, limit: int) -> list[Indicat
                 ind.description,
             )
         ).lower()
-        if all(w in hay for w in words):
-            hits.append(ind)
+        # Any word may match ("Germany inflation" finds inflation); more matched words rank higher.
+        score = sum(w in hay for w in words)
+        if score:
+            hits.append((score, ind))
     q = query.lower()
     slug = "-".join(words)
 
-    def rank(i: Indicator) -> tuple[bool, bool, bool, int]:
+    def rank(hit: tuple[int, Indicator]) -> tuple[int, bool, bool, bool, int]:
+        score, i = hit
         name = (i.name_en or "").lower()
-        return (i.slug != slug, not name.startswith(q), q not in name, -i.data_points)
+        return (-score, i.slug != slug, not name.startswith(q), q not in name, -i.data_points)
 
     hits.sort(key=rank)
-    return hits[:limit]
+    return [i for _, i in hits[:limit]]
 
 
 def _payment_required(resp: httpx.Response, message: str) -> EconDashPaymentRequired:

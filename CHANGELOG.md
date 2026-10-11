@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-11
+
+### Changed
+- `search_indicators` matches any query word and ranks by how many words matched, so
+  agent-style queries like `"Germany inflation"` find inflation indicators instead of nothing.
+
 ## [0.1.1] - 2026-10-11
 
 ### Fixed

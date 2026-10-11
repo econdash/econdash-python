@@ -6,7 +6,7 @@ abstract: "Python client for EconDash (econdash.org): 750+ macroeconomic indicat
 authors:
   - name: EconDash
     website: "https://econdash.org"
-version: 0.1.1
+version: 0.1.2
 date-released: "2026-10-11"
 license: MIT
 url: "https://econdash.org"

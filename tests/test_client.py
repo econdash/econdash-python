@@ -27,7 +27,8 @@ def test_search_indicators_filters_and_caches() -> None:
     hits = ed.search_indicators("inflation")
     assert hits and all("inflation" in (h.name_en or "").lower() + (h.slug or "") for h in hits)
     assert ed.search_indicators("money supply")[0].slug.startswith("money-supply")
-    assert ed.search_indicators("no such thing at all") == []
+    assert ed.search_indicators("zzzz qqqq") == []
+    assert "inflation" in ed.search_indicators("Germany inflation")[0].slug
     assert ed.search_indicators("gdp")[0].slug == "gdp-nominal"
     assert ed.search_indicators("GDP real")[0].slug == "gdp-real"
     assert route.call_count == 1
