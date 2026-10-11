@@ -12,6 +12,10 @@ source, licence and freshness metadata for every series.
 pip install econdash
 ```
 
+LangChain agents use the separate package [`langchain-econdash`](packages/langchain-econdash)
+(`EconDashToolkit`). It calls this client, so the free trial, an API key and pay-per-call
+behave the same way. A 402 becomes a sentence for the model instead of a traceback.
+
 ```python
 from econdash import EconDash
 
