@@ -116,33 +116,18 @@ then MPP Solana, and pays with the first one the API offers within your cap. On 
 API broadcasts the signed transfer and answers after confirmation, so a paid call can take
 up to ~40 seconds. Keep agent wallets funded with small amounts only.
 
-## CrewAI tools
+## LangChain and CrewAI
 
-```bash
-pip install "econdash[crewai]"
-```
-
-```python
-from econdash import EconDash
-from econdash.crewai import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
-
-client = EconDash()  # free trial; EconDash(api_key=...) or a wallet + max_usd_per_call for more
-tools = [EconDashSearchTool(client=client), EconDashSeriesTool(client=client),
-         EconDashCompareTool(client=client)]
-```
-
-Three tools for CrewAI agents: `econdash_search_indicators` (slug, unit, source),
-`econdash_get_series` (last 20 points, citation and econdash.org chart link) and
-`econdash_compare_countries` (latest value for up to 8 ISO3 codes, each fetched on its own).
-They have the same access as the client you pass. Outside the free trial, or on 429, a tool
-returns a short message for the model and no figures. A complete two-agent crew is in
-[`examples/crewai_macro_research.py`](examples/crewai_macro_research.py).
+Companion packages in [`packages/`](packages/) wrap this client as agent tools with the same
+access rules: [`langchain-econdash`](packages/langchain-econdash) and
+[`crewai-econdash`](packages/crewai-econdash) (`pip install crewai-econdash`, with an example
+two-agent research crew). Outside the free trial a tool returns a short message for the model
+and no figures.
 
 ## Examples
 
 Notebooks in [`examples/`](examples/): search → series → pandas chart, comparing countries,
-a LangChain agent, an agent paying per call (x402 / MPP), and a CrewAI research crew
-(`crewai_macro_research.py`).
+a LangChain agent, an agent paying per call (x402 / MPP).
 
 ## Data and licences
 

@@ -1,7 +1,7 @@
-"""CrewAI tools for the EconDash API. Install with ``pip install "econdash[crewai]"``.
+"""Three CrewAI tools over the econdash client.
 
 >>> from econdash import EconDash
->>> from econdash.crewai import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
+>>> from crewai_econdash import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
 >>> client = EconDash()  # free trial, or ECONDASH_API_KEY from env
 >>> tools = [EconDashSearchTool(client=client), EconDashSeriesTool(client=client),
 ...          EconDashCompareTool(client=client)]
@@ -14,21 +14,19 @@ from __future__ import annotations
 
 from typing import Any
 
-try:
-    from crewai.tools import BaseTool, EnvVar
-except ImportError as exc:  # pragma: no cover
-    raise ImportError('CrewAI tools need the extra: pip install "econdash[crewai]"') from exc
+from crewai.tools import BaseTool, EnvVar
 from pydantic import BaseModel, Field
 
-from ._client import EconDash
-from .errors import (
+from econdash import (
+    EconDash,
     EconDashAuthError,
     EconDashError,
     EconDashNotFound,
     EconDashPaymentRequired,
     EconDashRateLimitError,
+    Indicator,
+    Series,
 )
-from .models import Indicator, Series
 
 __all__ = ["EconDashCompareTool", "EconDashSearchTool", "EconDashSeriesTool"]
 

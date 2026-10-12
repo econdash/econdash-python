@@ -1,6 +1,6 @@
 """Macro Research Analyst: a two-agent CrewAI crew on EconDash data.
 
-    pip install "econdash[crewai]"
+    pip install crewai-econdash
     export MODEL=gpt-4.1-mini OPENAI_API_KEY=...   # any model CrewAI supports
     python examples/crewai_macro_research.py DEU
 
@@ -12,9 +12,9 @@ crew runs on the free trial (10 countries, 50 indicators).
 import sys
 
 from crewai import Agent, Crew, Process, Task
+from crewai_econdash import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
 
 from econdash import EconDash
-from econdash.crewai import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
 
 country = sys.argv[1] if len(sys.argv) > 1 else "DEU"
 client = EconDash()

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "crewai-econdash"
+version = "0.1.0"
+description = "CrewAI tools for EconDash macroeconomic data. Same free trial, API key and pay-per-call rules as the econdash client."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10,<3.14"
+authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
+keywords = ["crewai", "econdash", "economics", "tools", "agents", "x402"]
+dependencies = [
+    "econdash>=0.2.1",
+    "crewai>=1.15,<2",
+    "pydantic>=2.5",
+]
+
+[project.urls]
+Homepage = "https://econdash.org"
+Repository = "https://github.com/econdash/econdash-python"
+Documentation = "https://econdash.org/docs/python"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/crewai_econdash"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "examples"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

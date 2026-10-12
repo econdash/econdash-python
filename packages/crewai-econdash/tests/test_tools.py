@@ -4,21 +4,19 @@ from datetime import date
 from typing import Any
 
 import pytest
+from crewai_econdash import (
+    EconDashCompareTool,
+    EconDashSearchTool,
+    EconDashSeriesTool,
+)
 
-pytest.importorskip("crewai")
-
-from econdash import (  # noqa: E402
+from econdash import (
     EconDashNotFound,
     EconDashPaymentRequired,
     EconDashRateLimitError,
     Indicator,
     Point,
     Series,
-)
-from econdash.crewai import (  # noqa: E402
-    EconDashCompareTool,
-    EconDashSearchTool,
-    EconDashSeriesTool,
 )
 
 
