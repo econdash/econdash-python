@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
-keywords = ["economics", "macroeconomics", "gdp", "inflation", "time-series", "api", "x402", "mpp", "tempo", "solana", "world-bank", "imf"]
+keywords = ["economics", "macroeconomics", "gdp", "inflation", "time-series", "api", "x402", "mpp", "tempo", "solana", "crewai", "world-bank", "imf"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -35,6 +35,7 @@ dependencies = [
 x402 = ["x402[evm]>=2.25,<3"]
 tempo = ["pympp[tempo]>=0.11,<1; python_version >= '3.11'"]
 solana = ["solders>=0.21"]
+crewai = ["crewai>=1.15,<2; python_version < '3.14'"]
 
 [project.urls]
 Homepage = "https://econdash.org"

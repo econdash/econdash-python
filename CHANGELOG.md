@@ -9,6 +9,10 @@ All notable changes to this project are documented here. The project follows
 - Companion package `packages/langchain-econdash` (PyPI name `langchain-econdash`):
   four LangChain tools over this client. Outside the free trial they return a payment
   hint and no figures, unless the caller passed an API key or a wallet with `max_usd_per_call`.
+- CrewAI tools in `econdash.crewai` (extra `econdash[crewai]`): `EconDashSearchTool`,
+  `EconDashSeriesTool`, `EconDashCompareTool`, plus the example crew
+  `examples/crewai_macro_research.py`. Same access rules as the client; 402 and 429 become
+  text for the agent.
 
 ## [0.2.1] - 2026-10-11
 
