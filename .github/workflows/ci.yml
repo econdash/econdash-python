@@ -30,6 +30,26 @@ jobs:
       - run: uv run mypy
       - run: uv run pytest
 
+  packages:
+    # The companion packages run against the econdash in this commit, so a core change
+    # that breaks them fails here and not after a release.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        package: [langchain-econdash, crewai-econdash]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv venv .pkg-venv
+      - run: uv pip install --python .pkg-venv/bin/python -e . -e packages/${{ matrix.package }} pytest pytest-asyncio
+      - run: ../../.pkg-venv/bin/pytest
+        working-directory: packages/${{ matrix.package }}
+
   live:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -40,3 +60,8 @@ jobs:
           python-version: "3.12"
       - run: uv sync --all-extras --locked
       - run: uv run pytest -m live
+      - run: uv pip install -e packages/langchain-econdash -e packages/crewai-econdash
+      - run: ../../.venv/bin/pytest -m live
+        working-directory: packages/langchain-econdash
+      - run: ../../.venv/bin/pytest -m live
+        working-directory: packages/crewai-econdash

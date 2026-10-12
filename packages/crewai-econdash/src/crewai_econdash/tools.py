@@ -17,6 +17,7 @@ from typing import Any
 from crewai.tools import BaseTool, EnvVar
 from pydantic import BaseModel, Field
 
+from crewai_econdash._args import Flag, Iso3, Iso3List, Limit, Text, When, Year
 from econdash import (
     EconDash,
     EconDashAuthError,
@@ -120,8 +121,8 @@ class _EconDashTool(BaseTool):
 
 
 class SearchInput(BaseModel):
-    query: str = Field(description="Words to match against indicator names, slugs and sources.")
-    limit: int = Field(default=10, ge=1, le=20, description="How many matches to return.")
+    query: Text = Field(description="Words to match against indicator names, slugs and sources.")
+    limit: Limit = Field(default=10, description="How many matches to return, 1 to 20.")
 
 
 class EconDashSearchTool(_EconDashTool):
@@ -140,11 +141,11 @@ class EconDashSearchTool(_EconDashTool):
 
 
 class SeriesInput(BaseModel):
-    indicator: str = Field(description="Slug from econdash_search_indicators, e.g. gdp-nominal.")
-    country: str = Field(description="ISO3 code, e.g. USA. Not a country name.")
-    start: str | int | None = Field(default=None, description="Start year or date, e.g. 2000.")
-    end: str | int | None = Field(default=None, description="End year or date.")
-    full: bool = Field(
+    indicator: Text = Field(description="Slug from econdash_search_indicators, e.g. gdp-nominal.")
+    country: Iso3 = Field(description="ISO3 code, e.g. USA. Not a country name.")
+    start: When = Field(default=None, description="Start year or date, e.g. 2000.")
+    end: When = Field(default=None, description="End year or date.")
+    full: Flag = Field(
         default=False,
         description="Return the whole series the API sent. Default is the last 20 points.",
     )
@@ -170,7 +171,7 @@ class EconDashSeriesTool(_EconDashTool):
         if message := _country_error(country):
             return message
         try:
-            series = self.client.get_series(indicator, country.upper(), start=start, end=end)
+            series = self.client.get_series(indicator, country, start=start, end=end)
         except EconDashError as exc:
             return _explain(exc)
         except ValueError:
@@ -179,11 +180,9 @@ class EconDashSeriesTool(_EconDashTool):
 
 
 class CompareInput(BaseModel):
-    indicator: str = Field(description="Indicator slug, e.g. gdp-nominal.")
-    countries: list[str] = Field(
-        min_length=1, max_length=8, description="1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN']."
-    )
-    year: int | None = Field(default=None, description="Calendar year. Omit for the latest point.")
+    indicator: Text = Field(description="Indicator slug, e.g. gdp-nominal.")
+    countries: Iso3List = Field(description="1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN'].")
+    year: Year = Field(default=None, description="Calendar year. Omit for the latest point.")
 
 
 class EconDashCompareTool(_EconDashTool):
@@ -198,7 +197,6 @@ class EconDashCompareTool(_EconDashTool):
     def _line(self, indicator: str, country: str, year: int | None) -> str:
         if message := _country_error(country):
             return f"{country}: {message}"
-        country = country.upper()
         try:
             series = self.client.get_series(indicator, country, start=year, end=year)
         except EconDashError as exc:
@@ -211,4 +209,6 @@ class EconDashCompareTool(_EconDashTool):
         return f"{country}: {last.value} {series.unit or ''} on {last.date.isoformat()}{chart}"
 
     def _run(self, indicator: str, countries: list[str], year: int | None = None, **_: Any) -> str:
+        if not 1 <= len(countries) <= 8:
+            return "Pass 1 to 8 ISO3 codes per call, e.g. ['USA', 'DEU', 'JPN']."
         return "\n".join(self._line(indicator, c, year) for c in countries)

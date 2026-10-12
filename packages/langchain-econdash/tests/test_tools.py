@@ -49,6 +49,8 @@ class Fake:
 
     def get_series(self, indicator: str, country: str, start=None, end=None) -> Series:
         self.calls.append(("series", indicator, country.upper(), start, end))
+        if start == "abc":
+            raise ValueError("bad date")
         if country.upper() == "ZWE":
             raise EconDashPaymentRequired("outside trial", status_code=402)
         return _series(country.upper())
@@ -68,20 +70,6 @@ class Fake:
 
     async def get_series_async(self, indicator: str, country: str, start=None, end=None) -> Series:
         return self.get_series(indicator, country, start, end)
-
-
-class AsyncFake(Fake):
-    async def search_indicators(self, query: str, limit: int = 10) -> list[Indicator]:
-        return super().search_indicators(query, limit)
-
-    async def get_series(self, indicator: str, country: str, start=None, end=None) -> Series:
-        return super().get_series(indicator, country, start, end)
-
-    async def get_indicator(self, indicator: str) -> Indicator:
-        return super().get_indicator(indicator)
-
-    async def _get(self, url: str) -> list[str]:
-        return super()._get(url)
 
 
 def test_search_returns_slug_and_not_values() -> None:
@@ -165,12 +153,48 @@ def test_compare_keeps_paid_countries_out_of_the_answer() -> None:
 def test_compare_rejects_a_long_list() -> None:
     tool = CompareCountries(client=Fake(), async_client=Fake())
     text = tool.invoke({"indicator": "gdp-nominal", "countries": [f"A{i:02d}" for i in range(9)]})
-    assert "at most 8" in text
+    assert "Pass 1 to 8" in text
 
 
 @pytest.mark.asyncio
-async def test_async_series_uses_the_async_client() -> None:
-    tool = GetSeries(client=Fake(), async_client=AsyncFake())
-    text = await tool.ainvoke({"indicator": "gdp-nominal", "country": "DEU"})
-    assert "DEU" in text
-    assert "Payment required" not in text
+async def test_async_answers_match_sync() -> None:
+    # A code instead of a slug: the chart link needs a metadata lookup on both paths.
+    tool = GetSeries(client=Fake())
+    args = {"indicator": "world_bank__gdp_nominal", "country": "DEU"}
+    sync = tool.invoke(args)
+    assert "https://econdash.org/chart/gdp-nominal/DEU" in sync
+    assert await tool.ainvoke(args) == sync
+
+
+# Arguments shaped the way models send them. Each must give text, never an exception.
+MODEL_ARGS = [
+    (SearchIndicators, {"query": " gdp ", "limit": "5"}, "gdp-nominal"),
+    (SearchIndicators, {"query": "gdp", "limit": 50}, "gdp-nominal"),
+    (SearchIndicators, {"query": "gdp", "limit": None}, "gdp-nominal"),
+    (GetSeries, {"indicator": " gdp-nominal ", "country": " usa "}, "/gdp-nominal/USA"),
+    (GetSeries, {"indicator": "gdp-nominal", "country": "USA", "start": 2020.0}, "/USA"),
+    (GetSeries, {"indicator": "gdp-nominal", "country": "USA", "start": ""}, "/USA"),
+    (GetSeries, {"indicator": "gdp-nominal", "country": "USA", "full": None}, "/USA"),
+    (GetSeries, {"indicator": "gdp-nominal", "country": "USA", "start": "abc"}, "Invalid start"),
+    (GetSeries, {"indicator": "gdp-nominal", "country": "US"}, "ISO3"),
+    (GetMetadata, {"indicator": " gdp-nominal "}, "gdp-nominal: GDP"),
+    (CompareCountries, {"indicator": "gdp-nominal", "countries": "USA, deu"}, "DEU: 24.0"),
+    (CompareCountries, {"indicator": "gdp-nominal", "countries": "USA DEU"}, "DEU: 24.0"),
+    (CompareCountries, {"indicator": "gdp-nominal", "countries": "USA"}, "USA: 24.0"),
+    (
+        CompareCountries,
+        {"indicator": "gdp-nominal", "countries": ["USA"], "year": "latest"},
+        "USA:",
+    ),
+    (CompareCountries, {"indicator": "gdp-nominal", "countries": []}, "Pass 1 to 8"),
+    (CompareCountries, {"indicator": "gdp-nominal", "countries": ""}, "Pass 1 to 8"),
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("cls", "args", "expected"), MODEL_ARGS)
+async def test_model_shaped_arguments(cls: type, args: dict, expected: str) -> None:
+    tool = cls(client=Fake())
+    sync = tool.invoke(args)
+    assert expected in sync
+    assert await tool.ainvoke(args) == sync

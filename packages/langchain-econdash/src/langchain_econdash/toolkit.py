@@ -6,7 +6,7 @@ from typing import Any
 
 from langchain_core.tools import BaseTool
 
-from econdash import AsyncEconDash, EconDash
+from econdash import EconDash
 from langchain_econdash.tools import CompareCountries, GetMetadata, GetSeries, SearchIndicators
 
 
@@ -20,10 +20,9 @@ class EconDashToolkit:
 
     def __init__(self, api_key: str | None = None, **client_kwargs: Any) -> None:
         self.client = EconDash(api_key, **client_kwargs)
-        self.async_client = AsyncEconDash(api_key, **client_kwargs)
 
     def get_tools(self) -> list[BaseTool]:
-        shared = {"client": self.client, "async_client": self.async_client}
+        shared = {"client": self.client}
         return [
             SearchIndicators(**shared),
             GetSeries(**shared),
@@ -36,4 +35,3 @@ class EconDashToolkit:
 
     async def aclose(self) -> None:
         self.client.close()
-        await self.async_client.aclose()

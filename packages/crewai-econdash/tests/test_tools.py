@@ -89,10 +89,11 @@ def test_search_no_match_and_rate_limit_are_text(fake: Fake) -> None:
     assert "Retry after 30 seconds" in tool.run(query="busy")
 
 
-def test_search_validates_limit(fake: Fake) -> None:
-    with pytest.raises(ValueError):
-        EconDashSearchTool(client=fake).run(query="gdp", limit=50)
-    assert fake.calls == []
+def test_search_clamps_limit(fake: Fake) -> None:
+    tool = EconDashSearchTool(client=fake)
+    tool.run(query="gdp", limit=50)
+    tool.run(query="gdp", limit=None)
+    assert [c[2] for c in fake.calls] == [20, 10]
 
 
 def test_series_gives_last_points_citation_and_chart_link(fake: Fake) -> None:
@@ -150,19 +151,18 @@ def test_compare_each_country_on_its_own(fake: Fake) -> None:
     )
     assert out[0] == "USA: 24.0 USD on 2024-01-01 https://econdash.org/chart/gdp-nominal/USA"
     assert out[1].startswith("ZWE: Payment required.")
-    assert out[2].startswith("Japan: Invalid country code")
+    assert out[2].startswith("JAPAN: Invalid country code")
     assert [c for c in fake.calls if c[0] == "series"] == [
         ("series", "gdp-nominal", "USA", 2020, 2020),
         ("series", "gdp-nominal", "ZWE", 2020, 2020),
     ]
 
 
-def test_compare_validates_country_count(fake: Fake) -> None:
+def test_compare_country_count_is_text(fake: Fake) -> None:
     tool = EconDashCompareTool(client=fake)
-    with pytest.raises(ValueError):
-        tool.run(indicator="gdp-nominal", countries=[])
-    with pytest.raises(ValueError):
-        tool.run(indicator="gdp-nominal", countries=["USA"] * 9)
+    assert tool.run(indicator="gdp-nominal", countries=[]).startswith("Pass 1 to 8")
+    assert tool.run(indicator="gdp-nominal", countries=["USA"] * 9).startswith("Pass 1 to 8")
+    assert fake.calls == []
 
 
 def test_default_client_and_env_var_declared(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -171,3 +171,39 @@ def test_default_client_and_env_var_declared(monkeypatch: pytest.MonkeyPatch) ->
     assert tool.client.api_key == "k"
     assert [v.name for v in tool.env_vars] == ["ECONDASH_API_KEY"]
     assert tool.env_vars[0].required is False
+
+
+# Arguments shaped the way models send them. Each must give text, never an exception.
+MODEL_ARGS = [
+    ("search", {"query": " gdp ", "limit": "5"}, "gdp-nominal"),
+    ("search", {"query": "gdp", "limit": 0}, "gdp-nominal"),
+    ("series", {"indicator": " gdp-nominal ", "country": " usa "}, "/gdp-nominal/USA"),
+    ("series", {"indicator": "gdp-nominal", "country": "USA", "start": 2020.0}, "/USA"),
+    ("series", {"indicator": "gdp-nominal", "country": "USA", "start": ""}, "/USA"),
+    ("series", {"indicator": "gdp-nominal", "country": "USA", "full": None}, "/USA"),
+    ("series", {"indicator": "gdp-nominal", "country": "USA", "extra": 1}, "/USA"),
+    ("series", {"indicator": "gdp-nominal", "country": "USA", "start": "abc"}, "Invalid start"),
+    ("series", {"indicator": "gdp-nominal", "country": "US"}, "ISO3"),
+    ("compare", {"indicator": "gdp-nominal", "countries": "USA, deu"}, "DEU: 24.0"),
+    ("compare", {"indicator": "gdp-nominal", "countries": "USA DEU"}, "DEU: 24.0"),
+    ("compare", {"indicator": "gdp-nominal", "countries": "USA"}, "USA: 24.0"),
+    ("compare", {"indicator": "gdp-nominal", "countries": [" usa "]}, "USA: 24.0"),
+    ("compare", {"indicator": "gdp-nominal", "countries": ["USA"], "year": "latest"}, "USA:"),
+    ("compare", {"indicator": "gdp-nominal", "countries": ["USA"], "year": "2020"}, "USA:"),
+    ("compare", {"indicator": "gdp-nominal", "countries": ""}, "Pass 1 to 8"),
+]
+
+
+@pytest.mark.parametrize(("tool", "args", "expected"), MODEL_ARGS)
+def test_model_shaped_arguments(fake: Fake, tool: str, args: dict[str, Any], expected: str) -> None:
+    cls = {
+        "search": EconDashSearchTool,
+        "series": EconDashSeriesTool,
+        "compare": EconDashCompareTool,
+    }[tool]
+    assert expected in cls(client=fake).run(**args)
+
+
+def test_year_latest_means_no_date_filter(fake: Fake) -> None:
+    EconDashCompareTool(client=fake).run(indicator="gdp-nominal", countries=["USA"], year="latest")
+    assert fake.calls == [("series", "gdp-nominal", "USA", None, None)]

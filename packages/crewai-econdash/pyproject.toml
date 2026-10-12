@@ -30,3 +30,5 @@ include = ["src", "tests", "README.md", "examples"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["live: hits the real EconDash API (run with -m live)"]
+addopts = "-m 'not live'"
