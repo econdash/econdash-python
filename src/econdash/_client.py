@@ -48,33 +48,46 @@ def _is_code(indicator: str) -> bool:
     return "__" in indicator
 
 
+_PER_YEAR = {"daily": 260, "weekly": 52, "monthly": 12, "quarterly": 4}
+
+
+def _countries(ind: Indicator) -> float:
+    """Rough country coverage: points per period. A daily US-only series has many points."""
+    try:
+        years = int(str(ind.last_observation)[:4]) - int(str(ind.first_observation)[:4]) + 1
+    except ValueError:
+        years = 1
+    return ind.data_points / (max(years, 1) * _PER_YEAR.get(ind.frequency or "", 1))
+
+
 def _search(indicators: list[Indicator], query: str, limit: int) -> list[Indicator]:
     words = query.lower().split()
     hits = []
     for ind in indicators:
-        hay = " ".join(
-            x or ""
-            for x in (
-                ind.name_en,
-                ind.name_ru,
-                ind.slug,
-                ind.code,
-                ind.category,
-                ind.source,
-                ind.description,
-            )
-        ).lower()
-        # Any word may match ("Germany inflation" finds inflation); more matched words rank higher.
-        score = sum(w in hay for w in words)
+        title = " ".join(x or "" for x in (ind.name_en, ind.name_ru, ind.slug)).lower()
+        rest = " ".join(x or "" for x in (ind.code, ind.category, ind.source, ind.description))
+        # Any word may match ("Germany inflation" finds inflation); a word in the name or slug
+        # counts double, so "interest rate" is not won by a mention in a description.
+        score = sum(2 if w in title else int(w in rest.lower()) for w in words)
         if score:
             hits.append((score, ind))
     q = query.lower()
     slug = "-".join(words)
 
-    def rank(hit: tuple[int, Indicator]) -> tuple[int, bool, bool, bool, int]:
+    def rank(hit: tuple[int, Indicator]) -> tuple[int, bool, bool, bool, bool, int]:
         score, i = hit
         name = (i.name_en or "").lower()
-        return (-score, i.slug != slug, not name.startswith(q), q not in name, -i.data_points)
+        # At equal score a series for a handful of countries (US breakeven inflation)
+        # goes after cross-country ones (CPI inflation).
+        narrow = _countries(i) < 20
+        return (
+            -score,
+            i.slug != slug,
+            narrow,
+            not name.startswith(q),
+            q not in name,
+            -i.data_points,
+        )
 
     hits.sort(key=rank)
     return [i for _, i in hits[:limit]]

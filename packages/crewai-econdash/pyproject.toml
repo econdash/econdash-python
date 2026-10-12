@@ -12,7 +12,7 @@ requires-python = ">=3.10,<3.14"
 authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
 keywords = ["crewai", "econdash", "economics", "tools", "agents", "x402"]
 dependencies = [
-    "econdash>=0.2.1",
+    "econdash>=0.2.2",
     "crewai>=1.15,<2",
     "pydantic>=2.5",
 ]

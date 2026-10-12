@@ -12,8 +12,9 @@ from econdash import (
     EconDashNotFound,
     EconDashPaymentRequired,
     EconDashRateLimitError,
+    Indicator,
 )
-from econdash._client import _date
+from econdash._client import _date, _search
 
 from .conftest import BASE, load
 
@@ -33,6 +34,48 @@ def test_search_indicators_filters_and_caches() -> None:
     assert ed.search_indicators("GDP real")[0].slug == "gdp-real"
     assert route.call_count == 1
     assert route.calls[0].request.url.params["limit"] == "1200"
+
+
+def _ind(slug: str, name: str, freq: str, points: int, first: str, desc: str = "") -> Indicator:
+    return Indicator(
+        code=slug.replace("-", "_"),
+        slug=slug,
+        name_ru=name,
+        name_en=name,
+        category=None,
+        source=None,
+        unit=None,
+        fetch_method=None,
+        data_points=points,
+        frequency=freq,
+        first_observation=first,
+        last_observation="2025-01-01",
+        description=desc,
+    )
+
+
+def test_search_prefers_cross_country_series_and_name_matches() -> None:
+    breakeven = _ind(
+        "inflation-expectations-breakeven", "Inflation expectations", "daily", 5948, "2003-01-01"
+    )
+    cpi = _ind("cpi-inflation-rate-percent", "CPI inflation rate %", "annual", 11340, "1960-01-01")
+    debt = _ind(
+        "gross-government-debt",
+        "Gross Government Debt",
+        "annual",
+        2084,
+        "1980-01-01",
+        desc="Debt at market interest rate",
+    )
+    real_rates = _ind("real-interest-rates", "Real interest rates", "annual", 4793, "1960-01-01")
+    births = _ind("crude-birth-rate", "Crude birth rate", "annual", 16935, "1960-01-01")
+    rows = [breakeven, cpi, debt, real_rates, births]
+    # A daily US-only series starts with the word, but CPI covers ~170 countries.
+    assert [i.slug for i in _search(rows, "inflation", 2)] == [cpi.slug, breakeven.slug]
+    # "interest" only in a description counts less than "rate" in a name.
+    hits = [i.slug for i in _search(rows, "interest rate", 5)]
+    assert hits[0] == real_rates.slug
+    assert hits.index(debt.slug) > hits.index(births.slug)
 
 
 @respx.mock

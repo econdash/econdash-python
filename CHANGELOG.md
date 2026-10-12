@@ -3,7 +3,13 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.2] - 2026-10-12
+
+### Fixed
+- `search_indicators` ranking: a word found in the name or slug counts double against one
+  found only in the description, and at equal score series that cover only a few countries
+  go after cross-country ones. "inflation" now returns CPI inflation first, not the US-only
+  daily breakeven series; "interest rate" no longer ranks government debt second.
 
 ### Added
 - Companion package `packages/langchain-econdash` (PyPI name `langchain-econdash`):
