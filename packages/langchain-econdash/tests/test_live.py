@@ -36,6 +36,6 @@ def test_outside_trial_is_text_without_figures(tools: dict) -> None:
         {"indicator": "gdp-nominal", "countries": "USA ZWE"}
     )
     usa, zwe = out.splitlines()
-    assert usa.startswith("USA: ")
+    assert usa.startswith("USA: ") and "https://econdash.org/chart/gdp-nominal/USA" in usa
     assert zwe.startswith("ZWE: Payment required.")
     assert not any(ch.isdigit() for ch in zwe.split("free trial")[0])

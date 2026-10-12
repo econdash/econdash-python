@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## Companion packages 0.1.2 - 2026-10-12
+
+### Fixed
+- `crewai-econdash` and `langchain-econdash` accept arguments the way models send them:
+  a country list as `"USA, DEU"` or `"USA DEU"`, padded or lower-case ISO3 codes, `null`
+  for optional fields, `limit` out of range (clamped to 1-20), a year as `"2023"` or
+  `"latest"`. A bad date or an empty country list is answered with text, not an exception.
+- `langchain-econdash`: `ainvoke` runs the same code as `invoke` (LangChain's default
+  thread executor), so async no longer drops the chart link for indicator codes.
+  `EconDashToolkit` no longer creates an `AsyncEconDash` client.
+- `langchain-econdash`: `econdash_compare_countries` gives the econdash.org chart link per
+  country. Without it one model wrote a link from memory.
+- `crewai-econdash`: 0 or more than 8 countries is a text answer, as in LangChain.
+
+### Added
+- CI runs both companion packages on Python 3.10-3.13 against the econdash in the same
+  commit; the nightly live job checks the tools against the real API.
+
 ## Companion packages 0.1.1 - 2026-10-12
 
 ### Fixed

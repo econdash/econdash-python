@@ -25,7 +25,7 @@ tools = EconDashToolkit().get_tools()          # free trial
 | `econdash_search_indicators` | Slug, name, unit, source, frequency. No numbers. |
 | `econdash_get_series` | One country. Last 20 points, unit, freshness, a citation and the chart link. `full=true` for the whole reply. |
 | `econdash_get_metadata` | Description, source, licence, freshness, a sample of countries. |
-| `econdash_compare_countries` | Latest point for up to 8 ISO3 codes. |
+| `econdash_compare_countries` | Latest point and chart link for 1–8 ISO3 codes, each fetched on its own. |
 
 ## What is free
 

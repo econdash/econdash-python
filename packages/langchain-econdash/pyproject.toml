@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-econdash"
-version = "0.1.1"
+version = "0.1.2"
 description = "LangChain tools for EconDash macroeconomic data. Same free trial, API key and pay-per-call rules as the econdash client."
 readme = "README.md"
 license = "MIT"

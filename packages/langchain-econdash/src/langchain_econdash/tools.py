@@ -61,8 +61,10 @@ class SearchIndicators(_ClientTool):
 class SeriesInput(BaseModel):
     indicator: Text = Field(description="Slug from econdash_search_indicators, e.g. gdp-nominal.")
     country: Iso3 = Field(description="ISO3 code, e.g. USA. Not a country name.")
-    start: When = Field(default=None, description="Start year or date, e.g. 2000.")
-    end: When = Field(default=None, description="End year or date.")
+    start: When = Field(
+        default=None, description="Start year or date, e.g. 2000. Null for the first point."
+    )
+    end: When = Field(default=None, description="End year or date. Null for the latest point.")
     full: Flag = Field(
         default=False,
         description="Return the whole series the API sent. Default is the last 20 points.",
@@ -150,7 +152,9 @@ def _metadata_text(ind: Indicator, countries: list[str] | None, country_note: st
 class CompareInput(BaseModel):
     indicator: Text = Field(description="Indicator slug, e.g. gdp-nominal.")
     countries: Iso3List = Field(description="1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN'].")
-    year: Year = Field(default=None, description="Calendar year. Omit for the latest point.")
+    year: Year = Field(
+        default=None, description="Calendar year, e.g. 2023. Null for the latest point."
+    )
 
 
 class CompareCountries(_ClientTool):
@@ -172,7 +176,10 @@ class CompareCountries(_ClientTool):
         if not series.data:
             return f"{country}: no observations."
         last = series.data[-1]
-        return f"{country}: {last.value} {series.unit or ''} on {last.date.isoformat()}"
+        slug = self._slug(indicator, series)
+        # Without a link models write one from memory, e.g. /indicator/<slug>.
+        chart = f" https://econdash.org/chart/{slug}/{country}" if slug else ""
+        return f"{country}: {last.value} {series.unit or ''} on {last.date.isoformat()}{chart}"
 
     def _run(self, indicator: str, countries: list[str], year: int | None = None, **_: Any) -> str:
         if not 1 <= len(countries) <= 8:

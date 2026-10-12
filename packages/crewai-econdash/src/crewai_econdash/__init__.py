@@ -6,5 +6,5 @@ an API key, or pay-per-call.
 
 from crewai_econdash.tools import EconDashCompareTool, EconDashSearchTool, EconDashSeriesTool
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = ["EconDashCompareTool", "EconDashSearchTool", "EconDashSeriesTool", "__version__"]

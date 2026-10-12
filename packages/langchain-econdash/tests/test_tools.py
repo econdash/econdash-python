@@ -144,7 +144,7 @@ def test_metadata_includes_licence_and_countries() -> None:
 def test_compare_keeps_paid_countries_out_of_the_answer() -> None:
     tool = CompareCountries(client=Fake(), async_client=Fake())
     text = tool.invoke({"indicator": "gdp-nominal", "countries": ["USA", "ZWE"]})
-    assert "USA: 24.0" in text
+    assert "USA: 24.0 USD on 2024-01-01 https://econdash.org/chart/gdp-nominal/USA" in text
     zwe = next(line for line in text.splitlines() if line.startswith("ZWE"))
     assert "Payment required" in zwe
     assert "24.0" not in zwe

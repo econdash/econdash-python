@@ -143,8 +143,10 @@ class EconDashSearchTool(_EconDashTool):
 class SeriesInput(BaseModel):
     indicator: Text = Field(description="Slug from econdash_search_indicators, e.g. gdp-nominal.")
     country: Iso3 = Field(description="ISO3 code, e.g. USA. Not a country name.")
-    start: When = Field(default=None, description="Start year or date, e.g. 2000.")
-    end: When = Field(default=None, description="End year or date.")
+    start: When = Field(
+        default=None, description="Start year or date, e.g. 2000. Null for the first point."
+    )
+    end: When = Field(default=None, description="End year or date. Null for the latest point.")
     full: Flag = Field(
         default=False,
         description="Return the whole series the API sent. Default is the last 20 points.",
@@ -182,7 +184,9 @@ class EconDashSeriesTool(_EconDashTool):
 class CompareInput(BaseModel):
     indicator: Text = Field(description="Indicator slug, e.g. gdp-nominal.")
     countries: Iso3List = Field(description="1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN'].")
-    year: Year = Field(default=None, description="Calendar year. Omit for the latest point.")
+    year: Year = Field(
+        default=None, description="Calendar year, e.g. 2023. Null for the latest point."
+    )
 
 
 class EconDashCompareTool(_EconDashTool):
