@@ -142,8 +142,8 @@ class EconDashSearchTool(_EconDashTool):
 class SeriesInput(BaseModel):
     indicator: str = Field(description="Slug from econdash_search_indicators, e.g. gdp-nominal.")
     country: str = Field(description="ISO3 code, e.g. USA. Not a country name.")
-    start: str | None = Field(default=None, description="Start year or date, e.g. 2000.")
-    end: str | None = Field(default=None, description="End year or date.")
+    start: str | int | None = Field(default=None, description="Start year or date, e.g. 2000.")
+    end: str | int | None = Field(default=None, description="End year or date.")
     full: bool = Field(
         default=False,
         description="Return the whole series the API sent. Default is the last 20 points.",
@@ -162,8 +162,8 @@ class EconDashSeriesTool(_EconDashTool):
         self,
         indicator: str,
         country: str,
-        start: str | None = None,
-        end: str | None = None,
+        start: str | int | None = None,
+        end: str | int | None = None,
         full: bool = False,
         **_: Any,
     ) -> str:

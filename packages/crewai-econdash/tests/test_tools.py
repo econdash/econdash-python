@@ -104,6 +104,15 @@ def test_series_gives_last_points_citation_and_chart_link(fake: Fake) -> None:
     assert fake.calls == [("series", "gdp-nominal", "USA", "2000", None)]
 
 
+def test_series_accepts_years_as_numbers(fake: Fake) -> None:
+    # Models often send a year as a JSON number.
+    out = EconDashSeriesTool(client=fake).run(
+        indicator="gdp-nominal", country="USA", start=2020, end=2024
+    )
+    assert "https://econdash.org/chart/gdp-nominal/USA" in out
+    assert fake.calls == [("series", "gdp-nominal", "USA", 2020, 2024)]
+
+
 def test_series_full_and_code_resolves_slug(fake: Fake) -> None:
     out = EconDashSeriesTool(client=fake).run(
         indicator="world_bank__gdp_nominal", country="DEU", full=True

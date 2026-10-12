@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## Companion packages 0.1.1 - 2026-10-12
+
+### Fixed
+- `crewai-econdash` and `langchain-econdash`: `econdash_get_series` accepts `start`/`end` as
+  a number (`2020`) as well as a string. Models often send a year as a JSON number, and the
+  tool used to fail argument validation.
+
 ## [0.2.2] - 2026-10-12
 
 ### Fixed

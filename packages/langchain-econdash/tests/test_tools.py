@@ -110,6 +110,15 @@ def test_full_series_includes_the_start() -> None:
     assert "2000-01-01 0.0" in text
 
 
+def test_series_accepts_years_as_numbers() -> None:
+    # Models often send a year as a JSON number.
+    fake = Fake()
+    tool = GetSeries(client=fake, async_client=fake)
+    text = tool.invoke({"indicator": "gdp-nominal", "country": "USA", "start": 2020, "end": 2024})
+    assert "https://econdash.org/chart/gdp-nominal/USA" in text
+    assert ("series", "gdp-nominal", "USA", 2020, 2024) in fake.calls
+
+
 def test_outside_trial_is_a_payment_hint_without_figures() -> None:
     fake = Fake()
     tool = GetSeries(client=fake, async_client=fake)
