@@ -64,7 +64,8 @@ class EconDashToolSpec(BaseToolSpec):
     def search_indicators(
         self,
         query: Annotated[str, "Words to match against indicator names, slugs and sources."],
-        limit: Annotated[int, "How many matches to return, 1 to 20."] = 10,
+        limit: Annotated[int | str | None, "How many matches to return, 1 to 20."] = 10,
+        **_: Any,
     ) -> str:
         try:
             return search_text(self.client.search_indicators(_text(query), limit=_limit(limit)))
@@ -77,12 +78,16 @@ class EconDashToolSpec(BaseToolSpec):
         indicator: Annotated[str, "Slug from search_indicators, e.g. gdp-nominal."],
         country: Annotated[str, "ISO3 code, e.g. USA. Not a country name."],
         start: Annotated[
-            str | int | None, "Start year or date, e.g. 2000. Null for the first point."
+            str | int | float | None, "Start year or date, e.g. 2000. Null for the first point."
         ] = None,
-        end: Annotated[str | int | None, "End year or date. Null for the latest point."] = None,
+        end: Annotated[
+            str | int | float | None, "End year or date. Null for the latest point."
+        ] = None,
         full: Annotated[
-            bool, "Return the whole series the API sent. Default is the last 20 points."
+            bool | str | None,
+            "Return the whole series the API sent. Default is the last 20 points.",
         ] = False,
+        **_: Any,
     ) -> str:
         indicator = _text(indicator)
         country = _iso(country)
@@ -97,7 +102,7 @@ class EconDashToolSpec(BaseToolSpec):
         return series_text(series, slug=self._slug(indicator, series), full=_flag(full))
 
     @_documented(_DESC["get_metadata"])
-    def get_metadata(self, indicator: Annotated[str, "Indicator slug or code."]) -> str:
+    def get_metadata(self, indicator: Annotated[str, "Indicator slug or code."], **_: Any) -> str:
         indicator = _text(indicator)
         try:
             ind = self.client.get_indicator(indicator)
@@ -130,8 +135,12 @@ class EconDashToolSpec(BaseToolSpec):
     def compare_countries(
         self,
         indicator: Annotated[str, "Indicator slug, e.g. gdp-nominal."],
-        countries: Annotated[list[str], "1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN']."],
-        year: Annotated[int | None, "Calendar year, e.g. 2023. Null for the latest point."] = None,
+        countries: Annotated[list[str] | str, "1 to 8 ISO3 codes, e.g. ['USA', 'DEU', 'JPN']."],
+        year: Annotated[
+            int | str | float | None,
+            "Calendar year, e.g. 2023. Null or 'latest' for the latest point.",
+        ] = None,
+        **_: Any,
     ) -> str:
         indicator = _text(indicator)
         codes = _isos(countries)

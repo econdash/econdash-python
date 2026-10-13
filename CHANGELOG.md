@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## llama-index-tools-econdash 0.1.1 - 2026-10-13
+
+### Fixed
+- Tool arguments accept what the ECO-123 model runs actually sent: an extra field,
+  `limit` 0, a year as `"2020"` or `2023.0`, a bad date as text, and a country list
+  pasted as JSON text. Uses the `econdash` 0.2.4 normaliser.
+
+## [0.2.4] - 2026-10-13
+
+### Fixed
+- Agent argument normaliser: a country list sent as the text `["DEU","JPN"]` or
+  `['DEU', 'JPN']` is read as ISO3 codes. The strings `None`, `null` and `latest`
+  in a start or end date mean "not set", same as an empty value.
+
 ## [0.2.3] - 2026-10-13
 
 ### Added

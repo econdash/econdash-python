@@ -7,6 +7,7 @@ name is the only piece that changes, because each framework names that tool.
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -194,14 +195,35 @@ def _iso(value: Any) -> Any:
     return value.strip().upper() if isinstance(value, str) else value
 
 
+def _iso_token(item: Any) -> str:
+    return str(_iso(item)).strip("\"'[]")
+
+
 def _isos(value: Any) -> list[str]:
     if isinstance(value, str):
-        value = re.split(r"[\s,;]+", value)
-    if isinstance(value, (list, tuple)):
-        return [
-            str(_iso(item)) for item in value if not (isinstance(item, str) and not item.strip())
-        ]
-    return []
+        text = value.strip()
+        # A model sometimes sends the list as text: ["DEU","JPN"] or ['DEU', 'JPN'].
+        if text.startswith("[") and text.endswith("]"):
+            try:
+                parsed = json.loads(text.replace("'", '"'))
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, list):
+                value = parsed
+            else:
+                value = re.split(r"[\s,;]+", text.strip("[]"))
+        else:
+            value = re.split(r"[\s,;]+", text)
+    if not isinstance(value, (list, tuple)):
+        return []
+    codes: list[str] = []
+    for item in value:
+        if isinstance(item, str) and not item.strip():
+            continue
+        code = _iso_token(item)
+        if code:
+            codes.append(code)
+    return codes
 
 
 def _limit(value: Any) -> int:
@@ -224,7 +246,10 @@ def _when(value: Any) -> str | int | None:
     if isinstance(value, float) and value.is_integer():
         return int(value)
     if isinstance(value, str):
-        return value.strip() or None
+        text = value.strip()
+        if not text or text.lower() in {"none", "null", "latest"}:
+            return None
+        return text
     if value is None:
         return None
     if isinstance(value, int) and not isinstance(value, bool):

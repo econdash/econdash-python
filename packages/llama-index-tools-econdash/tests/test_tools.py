@@ -59,7 +59,7 @@ class Fake:
 
     def get_series(self, indicator: str, country: str, start=None, end=None) -> Series:
         self.calls.append(("series", indicator, country.upper(), start, end))
-        if start == "abc":
+        if start in {"abc", "2020-06-31", "last 5 years"}:
             raise ValueError("bad date")
         if country.upper() == "ZWE":
             raise EconDashPaymentRequired("outside trial", status_code=402)
@@ -217,7 +217,9 @@ async def test_async_answers_match_sync() -> None:
         ("search_indicators", {"query": " gdp ", "limit": "5"}, "gdp-nominal"),
         ("search_indicators", {"query": "gdp", "limit": 50}, "gdp-nominal"),
         ("search_indicators", {"query": "gdp", "limit": None}, "gdp-nominal"),
+        ("search_indicators", {"query": "gdp", "limit": 0}, "gdp-nominal"),
         ("get_series", {"indicator": " gdp-nominal ", "country": " usa "}, "/gdp-nominal/USA"),
+        ("get_series", {"indicator": "gdp-nominal", "country": "USA", "extra": 1}, "/USA"),
         ("get_series", {"indicator": "gdp-nominal", "country": "USA", "start": 2020.0}, "/USA"),
         ("get_series", {"indicator": "gdp-nominal", "country": "USA", "start": ""}, "/USA"),
         ("get_series", {"indicator": "gdp-nominal", "country": "USA", "full": None}, "/USA"),
@@ -226,13 +228,51 @@ async def test_async_answers_match_sync() -> None:
             {"indicator": "gdp-nominal", "country": "USA", "start": "abc"},
             "Invalid start",
         ),
+        (
+            "get_series",
+            {"indicator": "gdp-nominal", "country": "USA", "start": "2020-06-31"},
+            "Invalid start",
+        ),
+        (
+            "get_series",
+            {"indicator": "gdp-nominal", "country": "USA", "start": "last 5 years"},
+            "Invalid start",
+        ),
         ("get_series", {"indicator": "gdp-nominal", "country": "US"}, "ISO3"),
         ("get_metadata", {"indicator": " gdp-nominal "}, "gdp-nominal: GDP"),
+        ("compare_countries", {"indicator": "gdp-nominal", "countries": "USA,DEU"}, "DEU: 24.0"),
+        (
+            "compare_countries",
+            {"indicator": "gdp-nominal", "countries": '["DEU", "JPN", "USA"]'},
+            "JPN: 24.0",
+        ),
+        (
+            "compare_countries",
+            {"indicator": "gdp-nominal", "countries": "['DEU', 'USA']"},
+            "DEU: 24.0",
+        ),
+        (
+            "get_series",
+            {"indicator": "gdp-nominal", "country": "USA", "end": "None"},
+            "/USA",
+        ),
         ("compare_countries", {"indicator": "gdp-nominal", "countries": "USA, deu"}, "DEU: 24.0"),
         ("compare_countries", {"indicator": "gdp-nominal", "countries": "USA DEU"}, "DEU: 24.0"),
+        ("compare_countries", {"indicator": "gdp-nominal", "countries": "USA"}, "USA: 24.0"),
+        ("compare_countries", {"indicator": "gdp-nominal", "countries": [" usa "]}, "USA: 24.0"),
         (
             "compare_countries",
             {"indicator": "gdp-nominal", "countries": ["USA"], "year": "latest"},
+            "USA:",
+        ),
+        (
+            "compare_countries",
+            {"indicator": "gdp-nominal", "countries": ["USA"], "year": "2020"},
+            "USA:",
+        ),
+        (
+            "compare_countries",
+            {"indicator": "gdp-nominal", "countries": ["USA"], "year": 2023.0},
             "USA:",
         ),
         ("compare_countries", {"indicator": "gdp-nominal", "countries": []}, "Pass 1 to 8"),

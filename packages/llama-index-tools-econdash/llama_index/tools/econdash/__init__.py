@@ -8,5 +8,5 @@ is left out of the reader.
 from llama_index.tools.econdash.reader import EconDashReader
 from llama_index.tools.econdash.spec import EconDashToolSpec
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = ["EconDashReader", "EconDashToolSpec", "__version__"]

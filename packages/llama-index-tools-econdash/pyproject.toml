@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llama-index-tools-econdash"
-version = "0.1.0"
+version = "0.1.1"
 description = "LlamaIndex tools and a reader for EconDash time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology."
 readme = "README.md"
 license = "MIT"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
 keywords = ["llamaindex", "llama-index", "econdash", "rag", "economics", "tools", "x402"]
 dependencies = [
-    "econdash>=0.2.3",
+    "econdash>=0.2.4",
     "llama-index-core>=0.12,<0.15",
 ]
 

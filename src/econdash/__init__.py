@@ -1,6 +1,6 @@
 """Python client for the EconDash macroeconomic data API (https://econdash.org)."""
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 from ._client import DEFAULT_BASE_URL, AsyncEconDash, EconDash  # noqa: E402
 from .errors import (  # noqa: E402

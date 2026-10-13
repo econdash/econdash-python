@@ -26,6 +26,14 @@ def test_series_cites_the_chart(tools: dict) -> None:
     assert "citation:" in out
 
 
+@pytest.mark.asyncio
+async def test_series_by_code_sync_and_async_agree(tools: dict) -> None:
+    args = {"indicator": "world_bank__gdp_nominal", "country": "USA", "start": 2020}
+    sync = _out(tools["get_series"], **args)
+    assert "https://econdash.org/chart/gdp-nominal/USA" in sync
+    assert str((await tools["get_series"].acall(**args)).raw_output) == sync
+
+
 def test_metadata_has_licence(tools: dict) -> None:
     out = _out(tools["get_metadata"], indicator="gdp-nominal")
     assert "license: CC BY 4.0" in out

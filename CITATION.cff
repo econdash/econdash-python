@@ -6,7 +6,7 @@ abstract: "Python client for EconDash (econdash.org): 750+ indicators across ten
 authors:
   - name: EconDash
     website: "https://econdash.org"
-version: 0.2.3
+version: 0.2.4
 date-released: "2026-10-13"
 license: MIT
 url: "https://econdash.org"
