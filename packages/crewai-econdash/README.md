@@ -1,6 +1,6 @@
 # crewai-econdash
 
-[CrewAI](https://www.crewai.com) tools for [EconDash](https://econdash.org). They call the `econdash` client, so they follow the same access rules. They do not open a free back door to the archive.
+[CrewAI](https://www.crewai.com) tools for [EconDash](https://econdash.org) time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology. They call the `econdash` client, so they follow the same access rules. They do not open a free back door to the archive.
 
 ```bash
 pip install crewai-econdash
@@ -41,7 +41,7 @@ A country or indicator outside that trial makes the API answer 402. The tool tur
 
 ## How to pay
 
-- **API key** from an EconDash subscription (`api_key=` or `ECONDASH_API_KEY`): full archive, no per-call charge.
+- **API key** from an EconDash subscription (`api_key=` or `ECONDASH_API_KEY`): full archive, no per-call charge, 10,000 requests a month.
 - **Wallet** on the client (`x402_signer`, `tempo_account` or `solana_keypair`) together with `max_usd_per_call`: pays per call, only when the price is within the cap. See the [econdash README](https://github.com/econdash/econdash-python#pay-per-call-for-ai-agents).
 
 ## Example crew

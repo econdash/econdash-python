@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "crewai-econdash"
 version = "0.1.2"
-description = "CrewAI tools for EconDash macroeconomic data. Same free trial, API key and pay-per-call rules as the econdash client."
+description = "CrewAI tools for EconDash time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10,<3.14"

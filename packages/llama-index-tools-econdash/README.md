@@ -33,8 +33,9 @@ docs = EconDashReader().load_data(
 `EconDashReader.load_data` returns one LlamaIndex `Document` per indicator and country.
 The text is that same short summary plus the source and the licence. Metadata is
 `slug`, `iso3`, `source_url`, `data_changed_at` and `license`. A series whose
-licence forbids redistribution (Yahoo Finance, Case-Shiller, a third-party
-copyright, "no redistribution") is skipped, and the observations are not fetched.
+licence forbids redistribution (Yahoo Finance, Case-Shiller, ICE / Trading Economics, a
+third-party copyright, "no redistribution" or "не распространять") is skipped, and the
+observations are not fetched.
 
 The tool descriptions are the `econdash.agent_text` sentences shared with the
 LangChain tools. Only the name of the search tool differs (`search_indicators`
