@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13"]
-        package: [langchain-econdash, crewai-econdash]
+        package: [langchain-econdash, crewai-econdash, llama-index-tools-econdash]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
@@ -60,8 +60,10 @@ jobs:
           python-version: "3.12"
       - run: uv sync --all-extras --locked
       - run: uv run pytest -m live
-      - run: uv pip install -e packages/langchain-econdash -e packages/crewai-econdash
+      - run: uv pip install -e packages/langchain-econdash -e packages/crewai-econdash -e packages/llama-index-tools-econdash
       - run: ../../.venv/bin/pytest -m live
         working-directory: packages/langchain-econdash
       - run: ../../.venv/bin/pytest -m live
         working-directory: packages/crewai-econdash
+      - run: ../../.venv/bin/pytest -m live
+        working-directory: packages/llama-index-tools-econdash

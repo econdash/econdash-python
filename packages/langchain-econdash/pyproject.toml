@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-econdash"
-version = "0.1.2"
-description = "LangChain tools for EconDash macroeconomic data. Same free trial, API key and pay-per-call rules as the econdash client."
+version = "0.1.3"
+description = "LangChain tools for EconDash time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
 keywords = ["langchain", "econdash", "economics", "tools", "x402"]
 dependencies = [
-    "econdash>=0.2.1",
+    "econdash>=0.2.3",
     "langchain-core>=0.3",
     "pydantic>=2.5",
 ]

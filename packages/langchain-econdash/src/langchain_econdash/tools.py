@@ -12,14 +12,11 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from econdash import EconDashError, Indicator, Series
+from econdash.agent_text import tool_descriptions
 from langchain_econdash._args import Flag, Iso3, Iso3List, Limit, Text, When, Year
 from langchain_econdash._format import country_error, explain, search_text, series_text
 
-_TRIAL = (
-    "Free trial only: 10 countries (USA, CHN, DEU, JPN, GBR, FRA, IND, BRA, RUS, KOR) "
-    "and 50 indicators, 300 requests/day. Anything else comes back as a payment message, "
-    "not as numbers. Find the slug with econdash_search_indicators first."
-)
+_DESC = tool_descriptions()
 
 
 class _ClientTool(BaseTool):
@@ -45,10 +42,7 @@ class SearchInput(BaseModel):
 
 class SearchIndicators(_ClientTool):
     name: str = "econdash_search_indicators"
-    description: str = (
-        "Search the EconDash indicator catalog. Returns slug, name, unit, source and frequency. "
-        "Call this before a series. The catalog is metadata; it has no numbers. " + _TRIAL
-    )
+    description: str = _DESC["search_indicators"]
     args_schema: type[BaseModel] = SearchInput
 
     def _run(self, query: str, limit: int = 10, **_: Any) -> str:
@@ -73,10 +67,7 @@ class SeriesInput(BaseModel):
 
 class GetSeries(_ClientTool):
     name: str = "econdash_get_series"
-    description: str = (
-        "Load one indicator for one country: unit, when the data last changed, a citation "
-        "with the econdash.org chart link, and the last 20 observations. " + _TRIAL
-    )
+    description: str = _DESC["get_series"]
     args_schema: type[BaseModel] = SeriesInput
 
     def _run(
@@ -105,10 +96,7 @@ class MetadataInput(BaseModel):
 
 class GetMetadata(_ClientTool):
     name: str = "econdash_get_metadata"
-    description: str = (
-        "Describe one indicator: source, licence, freshness and some countries. "
-        "Does not return the time series. " + _TRIAL
-    )
+    description: str = _DESC["get_metadata"]
     args_schema: type[BaseModel] = MetadataInput
 
     def _run(self, indicator: str, **_: Any) -> str:
@@ -159,11 +147,7 @@ class CompareInput(BaseModel):
 
 class CompareCountries(_ClientTool):
     name: str = "econdash_compare_countries"
-    description: str = (
-        "Latest value of one indicator for a few countries, each requested on its own. "
-        "A country outside the trial is a payment message on that line; the other countries "
-        "are not unlocked by it. " + _TRIAL
-    )
+    description: str = _DESC["compare_countries"]
     args_schema: type[BaseModel] = CompareInput
 
     def _line(self, indicator: str, country: str, year: int | None) -> str:

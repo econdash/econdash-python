@@ -2,12 +2,12 @@ cff-version: 1.2.0
 message: "If you use this software or EconDash data, please cite it as below. Also cite the original data source shown for each indicator."
 type: software
 title: "econdash: Python client for the EconDash macroeconomic data API"
-abstract: "Python client for EconDash (econdash.org): 750+ macroeconomic indicators for 290+ countries with source, licence and freshness metadata."
+abstract: "Python client for EconDash (econdash.org): 750+ indicators across ten categories (macro, markets, labor, demographics, real estate, energy, transport, health, education, tech) for 290+ countries, with source, licence and freshness metadata."
 authors:
   - name: EconDash
     website: "https://econdash.org"
-version: 0.2.1
-date-released: "2026-10-11"
+version: 0.2.3
+date-released: "2026-10-13"
 license: MIT
 url: "https://econdash.org"
 repository-code: "https://github.com/econdash/econdash-python"

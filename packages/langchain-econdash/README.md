@@ -1,6 +1,6 @@
 # langchain-econdash
 
-LangChain tools for [EconDash](https://econdash.org). They call the `econdash` client, so they follow the same access rules. They do not open a free back door to the archive.
+LangChain tools for [EconDash](https://econdash.org) time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology. They call the `econdash` client, so they follow the same access rules. They do not open a free back door to the archive.
 
 ```bash
 pip install langchain-econdash

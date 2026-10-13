@@ -1,0 +1,56 @@
+name: Publish llama-index-tools-econdash to PyPI
+
+# PyPI trusted publishing, no API token.
+# Pending publisher: project llama-index-tools-econdash, owner econdash,
+# repo econdash-python, workflow publish-llamaindex.yml, environment pypi.
+# Tag llamaindex-v0.1.0 publishes 0.1.0. A plain v* tag still publishes only econdash.
+# LlamaIndex no longer accepts new integration packages in run-llama/llama_index.
+on:
+  push:
+    tags: ["llamaindex-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/llama-index-tools-econdash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.12"
+      - name: Tag matches package version
+        run: |
+          version="${GITHUB_REF_NAME#llamaindex-v}"
+          found="$(uv run --no-project python -c 'import pathlib, re; text = pathlib.Path("pyproject.toml").read_text(); print(re.search(r"^version = \"(.+)\"", text, re.M).group(1))')"
+          test "$version" = "$found"
+      - name: Test
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ../.. -e . pytest pytest-asyncio
+          .venv/bin/pytest
+      - name: Build
+        run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: packages/llama-index-tools-econdash/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/llama-index-tools-econdash/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

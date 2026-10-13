@@ -191,6 +191,17 @@ MODEL_ARGS = [
 ]
 
 
+def test_descriptions_come_from_the_core() -> None:
+    from econdash.agent_text import tool_descriptions
+
+    expected = tool_descriptions()
+    client = Fake()
+    assert SearchIndicators(client=client).description == expected["search_indicators"]
+    assert GetSeries(client=client).description == expected["get_series"]
+    assert GetMetadata(client=client).description == expected["get_metadata"]
+    assert CompareCountries(client=client).description == expected["compare_countries"]
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("cls", "args", "expected"), MODEL_ARGS)
 async def test_model_shaped_arguments(cls: type, args: dict, expected: str) -> None:

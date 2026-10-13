@@ -4,9 +4,10 @@
 [![CI](https://github.com/econdash/econdash-python/actions/workflows/ci.yml/badge.svg)](https://github.com/econdash/econdash-python/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/econdash)](https://pypi.org/project/econdash/)
 
-Python client for the [EconDash](https://econdash.org) macroeconomic data API: 750+ indicators
-(GDP, inflation, debt, trade, labour, money supply, …) for 290+ countries and regions, with
-source, licence and freshness metadata for every series.
+Python client for the [EconDash](https://econdash.org) API: 750+ indicators across ten
+categories (macro, markets, labor, demographics, real estate, energy, transport, health,
+education and tech) for 290+ countries and regions, with source, licence and freshness
+metadata for every series.
 
 ```bash
 pip install econdash
@@ -116,18 +117,20 @@ then MPP Solana, and pays with the first one the API offers within your cap. On 
 API broadcasts the signed transfer and answers after confirmation, so a paid call can take
 up to ~40 seconds. Keep agent wallets funded with small amounts only.
 
-## LangChain and CrewAI
+## LangChain, LlamaIndex and CrewAI
 
 Companion packages in [`packages/`](packages/) wrap this client as agent tools with the same
-access rules: [`langchain-econdash`](packages/langchain-econdash) and
-[`crewai-econdash`](packages/crewai-econdash) (`pip install crewai-econdash`, with an example
-two-agent research crew). Outside the free trial a tool returns a short message for the model
-and no figures.
+access rules: [`langchain-econdash`](packages/langchain-econdash),
+[`llama-index-tools-econdash`](packages/llama-index-tools-econdash) (`EconDashToolSpec` and
+`EconDashReader`) and [`crewai-econdash`](packages/crewai-econdash). Outside the free trial a
+tool returns a short message for the model and no figures. The reader skips a series whose
+licence forbids redistribution. The four tool descriptions live in `econdash.agent_text`.
 
 ## Examples
 
-Notebooks in [`examples/`](examples/): search → series → pandas chart, comparing countries,
-a LangChain agent, an agent paying per call (x402 / MPP).
+Notebooks in [`examples/`](examples/) and in the companion packages: search → series →
+pandas chart, comparing countries, a LangChain agent, a LlamaIndex agent and a LlamaIndex
+RAG index, an agent paying per call (x402 / MPP).
 
 ## Data and licences
 

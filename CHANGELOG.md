@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] - 2026-10-13
+
+### Added
+- `econdash.agent_text`: the four tool descriptions, compact formatters and the
+  redistribution check shared by the agent integrations. An empty licence is not a ban.
+  "No redistribution", "не распространять", third-party copyright, Yahoo terms, Yahoo
+  Finance, Case-Shiller and ICE / Trading Economics are.
+- Companion package `packages/llama-index-tools-econdash` (PyPI name
+  `llama-index-tools-econdash`): `EconDashToolSpec` (search, series, metadata, compare)
+  and `EconDashReader` for a RAG index. Tool descriptions come from `econdash.agent_text`.
+  The reader skips a series the licence forbids and does not fetch its observations.
+  402 and 429 on the tools are text for the model, with no figures.
+
+### Changed
+- `langchain-econdash` 0.1.3 reads those four descriptions from `econdash.agent_text`
+  instead of keeping a second copy. The sentences are unchanged. It now depends on
+  `econdash>=0.2.3`.
+
 ## Companion packages 0.1.2 - 2026-10-12
 
 ### Fixed

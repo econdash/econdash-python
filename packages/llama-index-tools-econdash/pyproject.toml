@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llama-index-tools-econdash"
+version = "0.1.0"
+description = "LlamaIndex tools and a reader for EconDash time series across ten categories: macroeconomics, financial markets, labor, demographics, real estate, energy, transport, healthcare, education and technology."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "EconDash", email = "noderguru@gmail.com" }]
+keywords = ["llamaindex", "llama-index", "econdash", "rag", "economics", "tools", "x402"]
+dependencies = [
+    "econdash>=0.2.3",
+    "llama-index-core>=0.12,<0.15",
+]
+
+[project.urls]
+Homepage = "https://econdash.org"
+Repository = "https://github.com/econdash/econdash-python"
+Documentation = "https://econdash.org/docs/python"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["llama_index"]
+
+[tool.hatch.build.targets.sdist]
+include = ["llama_index", "tests", "README.md", "examples"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = ["live: hits the real EconDash API (run with -m live)"]
+addopts = "-m 'not live'"
+
+[tool.llamahub]
+contains_example = true
+import_path = "llama_index.tools.econdash"
+
+[tool.llamahub.class_authors]
+EconDashToolSpec = "EconDash"
+EconDashReader = "EconDash"
